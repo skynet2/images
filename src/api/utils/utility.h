@@ -206,6 +206,27 @@ inline void setup_timeout_handler(const VImage &image,
 }
 
 /**
+ * Ensure decoding remains sequential.
+ * @param image The source image.
+ * @param process_timeout The specified process timeout.
+ * @return A new image.
+ */
+inline VImage stay_sequential(const VImage &image,
+                              const time_t process_timeout) {
+    if (!vips_image_is_sequential(image.get_image())) {
+        return image;
+    }
+
+    // Copy to memory evaluates the image, so set up the timeout handler,
+    // if necessary.
+    utils::setup_timeout_handler(image, process_timeout);
+
+    auto copy = image.copy_memory().copy();
+    copy.remove(VIPS_META_SEQUENTIAL);
+    return copy;
+}
+
+/**
  * Determine the output from the image type enum.
  * @param image_type The image type enum.
  * @return The image output.
@@ -383,6 +404,7 @@ calculate_position(const int in_width, const int in_height, const int out_width,
 /**
  * Split/crop each frame and reassemble.
  * @param image The source image.
+ * @param process_timeout The specified process timeout.
  * @param left Crop x-position.
  * @param top Crop y-position.
  * @param width Crop width.
@@ -391,8 +413,9 @@ calculate_position(const int in_width, const int in_height, const int out_width,
  * @param page_height Page height.
  * @return A new image.
  */
-inline VImage crop_multi_page(const VImage &image, int left, int top, int width,
-                              int height, int n_pages, int page_height) {
+inline VImage crop_multi_page(const VImage &image, const time_t process_timeout,
+                              int left, int top, int width, int height,
+                              int n_pages, int page_height) {
     if (top == 0 && height == page_height) {
         // Fast path; no need to adjust the height of the multi-page image
         return image.extract_area(left, 0, width, image.height());
@@ -401,17 +424,16 @@ inline VImage crop_multi_page(const VImage &image, int left, int top, int width,
     std::vector<VImage> pages;
     pages.reserve(n_pages);
 
+    auto crop = stay_sequential(image, process_timeout);
+
     // Split the image into cropped frames
     for (int i = 0; i < n_pages; i++) {
         pages.push_back(
-            image.extract_area(left, page_height * i + top, width, height));
+            crop.extract_area(left, page_height * i + top, width, height));
     }
 
     // Reassemble the frames into a tall, thin image
-    VImage assembled =
-        VImage::arrayjoin(pages, VImage::option()->set("across", 1));
-
-    return assembled;
+    return VImage::arrayjoin(pages, VImage::option()->set("across", 1));
 }
 
 /**

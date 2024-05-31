@@ -382,8 +382,9 @@ VImage Mask::process(const VImage &image) const {
             // Update the page height
             query_->update("page_height", mask_height);
 
-            return utils::crop_multi_page(output_image, left, top, mask_width,
-                                          mask_height, n_pages, page_height);
+            return utils::crop_multi_page(output_image, config_.process_timeout,
+                                          left, top, mask_width, mask_height,
+                                          n_pages, page_height);
         }
 
         return output_image.extract_area(left, top, mask_width, mask_height);

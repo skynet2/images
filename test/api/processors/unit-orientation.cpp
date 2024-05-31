@@ -142,3 +142,13 @@ TEST_CASE("rotate a multi-page image with a non-straight angle",
     CHECK(image.width() == 1050);
     CHECK(vips_image_get_page_height(image.get_image()) == 990);
 }
+
+TEST_CASE("random access flip", "[orientation]") {
+    auto test_image = fixtures->input_jpg_overlay_layer_2;
+    auto params = "trim=10&flip";
+
+    VImage image = process_file<VImage>(test_image, params);
+
+    CHECK(image.width() == 727);
+    CHECK(image.height() == 727);
+}
