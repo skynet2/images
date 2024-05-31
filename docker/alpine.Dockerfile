@@ -5,13 +5,13 @@ FROM alpine:3.19
 
 LABEL maintainer="Kleis Auke Wolthuizen <info@kleisauke.nl>"
 
-ARG NGINX_VERSION=1.25.4
+ARG NGINX_VERSION=1.27.0
 
 # Copy the contents of this repository to the container
 COPY . /var/www/imagesweserv
 WORKDIR /var/www/imagesweserv
 
-# Create nginx user/group first, to be consistent throughout docker variants
+# Create nginx user/group
 RUN addgroup -g 101 -S nginx \
     && adduser -S -D -H -u 101 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx \
     # Bring in build dependencies
