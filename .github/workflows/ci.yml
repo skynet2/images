@@ -17,10 +17,7 @@ jobs:
       fail-fast: true
       matrix:
         include:
-          # TODO(kleisauke): Enable once magickload_source is supported
-          # - os: ubuntu-22.04
-          #   libvips-version: master
-          - os: ubuntu-22.04
+          - os: ubuntu-24.04
             libvips-version: 8.15.2
             coverage: true
     steps:
@@ -44,11 +41,11 @@ jobs:
             meson \
             libtest-nginx-perl \
             libcgif-dev libexif-dev libexpat1-dev \
-            libheif-dev libhwy-dev libimagequant-dev \
-            liblcms2-dev libmagickcore-dev libpango1.0-dev \
-            libpng-dev libpoppler-glib-dev librsvg2-dev \
-            libtiff5-dev libwebp-dev \
-            liborc-0.4-dev # FIXME: Remove once libhwy 1.0.5 is available.
+            libheif-dev libheif-plugin-aomenc libheif-plugin-x265 \
+            libhwy-dev libimagequant-dev libjxl-dev \
+            liblcms2-dev libmagickcore-dev libopenjp2-7-dev \
+            libpango1.0-dev libpoppler-glib-dev librsvg2-dev \
+            libspng-dev libtiff5-dev libwebp-dev
       - name: Install libvips
         if: steps.cache-libvips.outputs.cache-hit != 'true'
         env:
@@ -87,7 +84,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
   docker-publish:
     needs: CI
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
