@@ -1,5 +1,6 @@
 #include "mask.h"
 
+#include "../io/blob.h"
 #include "../utils/utility.h"
 
 #include <algorithm>
@@ -14,6 +15,8 @@ namespace weserv::api::processors {
 
 using enums::MaskType;
 using parsers::Color;
+
+using io::Blob;
 
 std::string Mask::svg_path_by_type(const int width, const int height,
                                    const MaskType &mask,
@@ -323,10 +326,11 @@ VImage Mask::process(const VImage &image) const {
         auto svg_mask = svg.str();
 
         // We don't take a copy of the data or free it
-        auto *blob = vips_blob_new(nullptr, svg_mask.data(), svg_mask.size());
+        auto blob =
+            Blob(vips_blob_new(nullptr, svg_mask.data(), svg_mask.size()));
         auto mask = VImage::svgload_buffer(
-            blob, VImage::option()->set("access", VIPS_ACCESS_SEQUENTIAL));
-        vips_area_unref(reinterpret_cast<VipsArea *>(blob));
+            blob.get_blob(),
+            VImage::option()->set("access", VIPS_ACCESS_SEQUENTIAL));
 
         // Cutout via dest-in
         output_image = output_image.composite2(mask, VIPS_BLEND_MODE_DEST_IN);
@@ -353,10 +357,11 @@ VImage Mask::process(const VImage &image) const {
         auto svg_frame = svg.str();
 
         // We don't take a copy of the data or free it
-        auto *blob = vips_blob_new(nullptr, svg_frame.data(), svg_frame.size());
+        auto blob =
+            Blob(vips_blob_new(nullptr, svg_frame.data(), svg_frame.size()));
         auto frame = VImage::svgload_buffer(
-            blob, VImage::option()->set("access", VIPS_ACCESS_SEQUENTIAL));
-        vips_area_unref(reinterpret_cast<VipsArea *>(blob));
+            blob.get_blob(),
+            VImage::option()->set("access", VIPS_ACCESS_SEQUENTIAL));
 
         // Ensure image to composite is premultiplied sRGB
         frame = frame.premultiply();

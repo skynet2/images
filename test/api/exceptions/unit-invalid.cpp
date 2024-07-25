@@ -57,4 +57,30 @@ TEST_CASE("invalid image", "[invalid]") {
         CHECK_THAT(status.message(),
                    Contains("Invalid or unsupported image format"));
     }
+    SECTION("empty source") {
+        if (vips_version(0) < 8 ||
+            (vips_version(0) == 8 && vips_version(1) < 13)) {
+            SUCCEED("requires libvips 8.13+, skipping test");
+            return;
+        }
+
+        class UnreadableSource : public SourceInterface {
+            int64_t read(void * /* unsused */, size_t /* unsused */) override {
+                return -1;
+            }
+
+            int64_t seek(int64_t /* unsused */, int /* unsused */) override {
+                return -1;
+            }
+        };
+
+        Status status = process(
+            std::unique_ptr<SourceInterface>(new UnreadableSource()), nullptr);
+
+        CHECK(!status.ok());
+        CHECK(status.code() == static_cast<int>(Status::Code::InvalidImage));
+        CHECK(status.error_cause() == Status::ErrorCause::Application);
+        CHECK_THAT(status.message(),
+                   Contains("Invalid or unsupported image format"));
+    }
 }

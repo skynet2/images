@@ -9,15 +9,13 @@
 std::shared_ptr<Fixtures> fixtures;
 std::shared_ptr<weserv::api::ApiManager> api_manager;
 
+// libvips prior to 8.12 uses *magick for saving to gif
 bool pre_8_12 =
     vips_version(0) < 8 || (vips_version(0) == 8 && vips_version(1) < 12);
 
-// TODO(kleisauke): Enable once magickload_source is supported in libvips
-bool true_streaming = false;
-
 VImage buffer_to_image(const std::string &buf) {
     const char *operation_name =
-        vips_foreign_find_load_buffer(buf.c_str(), buf.size());
+        vips_foreign_find_load_buffer(buf.data(), buf.size());
 
     if (operation_name == nullptr) {
         throw std::runtime_error("invalid or unsupported image format");
@@ -26,12 +24,12 @@ VImage buffer_to_image(const std::string &buf) {
     VImage out;
 
     // We must take a copy of the data.
-    VipsBlob *blob = vips_blob_copy(buf.c_str(), buf.size());
+    VipsBlob *blob = vips_blob_copy(buf.data(), buf.size());
     vips::VOption *options = VImage::option()
                                  ->set("access", VIPS_ACCESS_SEQUENTIAL)
                                  ->set("buffer", blob)
                                  ->set("out", &out);
-    vips_area_unref(VIPS_AREA(blob));
+    vips_area_unref(reinterpret_cast<VipsArea *>(blob));
 
     VImage::call(operation_name, options);
 

@@ -179,7 +179,8 @@ static void image_eval_cb(VipsImage *image, VipsProgress *progress,
         // We've killed the image and issued an error, it's now our caller's
         // responsibility to pass the message up the chain.
         *timeout = 0;
-    }  // LCOV_EXCL_STOP
+        // LCOV_EXCL_STOP
+    }
 }
 
 /**
@@ -323,19 +324,8 @@ inline std::string image_type_id(const ImageType &image_type) {
         case ImageType::Unknown:  // LCOV_EXCL_START
         default:
             return "unknown";
+        // LCOV_EXCL_STOP
     }
-    // LCOV_EXCL_STOP
-}
-
-/**
- * Does this image type support multiple pages?
- * @param image_type Image type to check.
- * @return A bool indicating if this image type support multiple pages.
- */
-inline bool support_multi_pages(const ImageType &image_type) {
-    return image_type == ImageType::Webp || image_type == ImageType::Tiff ||
-           image_type == ImageType::Gif || image_type == ImageType::Pdf ||
-           image_type == ImageType::Heif || image_type == ImageType::Magick;
 }
 
 /**
@@ -539,8 +529,9 @@ inline std::string image_to_json(const VImage &image,
  * @param s The string to escape.
  * @return The escaped string.
  */
-inline std::string escape_string(const std::string &s) {  // LCOV_EXCL_START
+inline std::string escape_string(const std::string &s) {
     std::ostringstream o;
+    // LCOV_EXCL_START
     for (char c : s) {
         switch (c) {
             case '\x00':
@@ -565,9 +556,9 @@ inline std::string escape_string(const std::string &s) {  // LCOV_EXCL_START
                 o << c;
         }
     }
+    // LCOV_EXCL_STOP
 
     return o.str();
 }
-// LCOV_EXCL_STOP
 
 }  // namespace weserv::api::utils

@@ -59,8 +59,9 @@ Source Source::new_from_pointer(std::unique_ptr<io::SourceInterface> source) {
         g_object_new(WESERV_TYPE_SOURCE, "source", source.get(), nullptr));
 
     if (vips_object_build(VIPS_OBJECT(weserv_source)) != 0) {
-        VIPS_UNREF(weserv_source);
+        VIPS_UNREF(weserv_source);  // LCOV_EXCL_START
         throw vips::VError();
+        // LCOV_EXCL_STOP
     }
 
     return Source(weserv_source);
@@ -70,7 +71,7 @@ Source Source::new_from_file(const std::string &filename) {
     VipsSource *source = vips_source_new_from_file(filename.c_str());
 
     if (source == nullptr) {
-        throw vips::VError();
+        throw vips::VError();  // LCOV_EXCL_LINE
     }
 
     return Source(source);
@@ -78,10 +79,10 @@ Source Source::new_from_file(const std::string &filename) {
 
 Source Source::new_from_buffer(const std::string &buffer) {
     VipsSource *source =
-        vips_source_new_from_memory(buffer.c_str(), buffer.size());
+        vips_source_new_from_memory(buffer.data(), buffer.size());
 
     if (source == nullptr) {
-        throw vips::VError();
+        throw vips::VError();  // LCOV_EXCL_LINE
     }
 
     return Source(source);

@@ -1,6 +1,7 @@
 #include "thumbnail.h"
 
 #include "../exceptions/large.h"
+#include "../io/blob.h"
 
 #include <algorithm>
 #include <cmath>
@@ -18,6 +19,7 @@ using enums::ImageType;
 // NOTE: Can be overridden with `&fsol=0`.
 const bool FAST_SHRINK_ON_LOAD = true;
 
+using io::Blob;
 using io::Source;
 
 template <>
@@ -28,11 +30,9 @@ Thumbnail::new_from_source<ImageType::Jpeg>(const Source &source,
     return VImage::jpegload_source(source, options);
 #else
     // We don't take a copy of the data or free it
-    auto *blob =
-        vips_blob_new(nullptr, source.buffer().data(), source.buffer().size());
-    auto image = VImage::jpegload_buffer(blob, options);
-    vips_area_unref(reinterpret_cast<VipsArea *>(blob));
-    return image;
+    auto blob = Blob(
+        vips_blob_new(nullptr, source.buffer().data(), source.buffer().size()));
+    return VImage::jpegload_buffer(blob.get_blob(), options);
 #endif
 }
 
@@ -44,11 +44,9 @@ Thumbnail::new_from_source<ImageType::Pdf>(const Source &source,
     return VImage::pdfload_source(source, options);
 #else
     // We don't take a copy of the data or free it
-    auto *blob =
-        vips_blob_new(nullptr, source.buffer().data(), source.buffer().size());
-    auto image = VImage::pdfload_buffer(blob, options);
-    vips_area_unref(reinterpret_cast<VipsArea *>(blob));
-    return image;
+    auto blob = Blob(
+        vips_blob_new(nullptr, source.buffer().data(), source.buffer().size()));
+    return VImage::pdfload_buffer(blob.get_blob(), options);
 #endif
 }
 
@@ -60,11 +58,9 @@ Thumbnail::new_from_source<ImageType::Webp>(const Source &source,
     return VImage::webpload_source(source, options);
 #else
     // We don't take a copy of the data or free it
-    auto *blob =
-        vips_blob_new(nullptr, source.buffer().data(), source.buffer().size());
-    auto image = VImage::webpload_buffer(blob, options);
-    vips_area_unref(reinterpret_cast<VipsArea *>(blob));
-    return image;
+    auto blob = Blob(
+        vips_blob_new(nullptr, source.buffer().data(), source.buffer().size()));
+    return VImage::webpload_buffer(blob.get_blob(), options);
 #endif
 }
 
@@ -76,11 +72,9 @@ Thumbnail::new_from_source<ImageType::Tiff>(const Source &source,
     return VImage::tiffload_source(source, options);
 #else
     // We don't take a copy of the data or free it
-    auto *blob =
-        vips_blob_new(nullptr, source.buffer().data(), source.buffer().size());
-    auto image = VImage::tiffload_buffer(blob, options);
-    vips_area_unref(reinterpret_cast<VipsArea *>(blob));
-    return image;
+    auto blob = Blob(
+        vips_blob_new(nullptr, source.buffer().data(), source.buffer().size()));
+    return VImage::tiffload_buffer(blob.get_blob(), options);
 #endif
 }
 
@@ -105,11 +99,9 @@ Thumbnail::new_from_source<ImageType::Svg>(const Source &source,
     return VImage::svgload_source(source, options);
 #else
     // We don't take a copy of the data or free it
-    auto *blob =
-        vips_blob_new(nullptr, source.buffer().data(), source.buffer().size());
-    auto image = VImage::svgload_buffer(blob, options);
-    vips_area_unref(reinterpret_cast<VipsArea *>(blob));
-    return image;
+    auto blob = Blob(
+        vips_blob_new(nullptr, source.buffer().data(), source.buffer().size()));
+    return VImage::svgload_buffer(blob.get_blob(), options);
 #endif
 }
 
@@ -121,11 +113,9 @@ Thumbnail::new_from_source<ImageType::Heif>(const Source &source,
     return VImage::heifload_source(source, options);
 #else
     // We don't take a copy of the data or free it
-    auto *blob =
-        vips_blob_new(nullptr, source.buffer().data(), source.buffer().size());
-    auto image = VImage::heifload_buffer(blob, options);
-    vips_area_unref(reinterpret_cast<VipsArea *>(blob));
-    return image;
+    auto blob = Blob(
+        vips_blob_new(nullptr, source.buffer().data(), source.buffer().size()));
+    return VImage::heifload_buffer(blob.get_blob(), options);
 #endif
 }
 
@@ -311,14 +301,7 @@ int Thumbnail::resolve_tiff_pyramid(const VImage &image, const Source &source,
 
 void Thumbnail::append_page_options(vips::VOption *options) const {
     auto n = query_->get<int>("n");
-    auto page = query_->get_if<int>(
-        "page",
-        [](int p) {
-            // Page needs to be in the range of
-            // 0 (numbered from zero) - 100000
-            return p >= 0 && p <= 100000;
-        },
-        0);
+    auto page = query_->get<int>("page");
 
     options->set("n", n);
     options->set("page", page);

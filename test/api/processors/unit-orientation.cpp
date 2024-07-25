@@ -124,9 +124,7 @@ TEST_CASE("rectangular output ignoring aspect ratio, rotate by 270 degrees",
 
 TEST_CASE("rotate a multi-page image with a non-straight angle",
           "[orientation]") {
-    if (vips_type_find("VipsOperation", true_streaming
-                                            ? "gifload_source"
-                                            : "gifload_buffer") == 0 ||
+    if (vips_type_find("VipsOperation", "gifload_buffer") == 0 ||
         vips_type_find("VipsOperation", pre_8_12
                                             ? "magicksave_buffer"
                                             : "gifsave_target") == 0) {

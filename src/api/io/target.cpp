@@ -17,6 +17,7 @@ static gint64 weserv_target_write_wrapper(VipsTarget *target, const void *data,
     return weserv_target->write(data, length);
 }
 
+// LCOV_EXCL_START
 static gint64 weserv_target_read_wrapper(VipsTarget *target, void *data,
                                          size_t length) {
     auto weserv_target = WESERV_TARGET(target)->target;
@@ -30,6 +31,7 @@ static gint64 weserv_target_seek_wrapper(VipsTarget *target, gint64 offset,
 
     return weserv_target->seek(offset, whence);
 }
+// LCOV_EXCL_STOP
 
 static int weserv_target_end_wrapper(VipsTarget *target) {
     auto weserv_target = WESERV_TARGET(target)->target;
@@ -71,8 +73,9 @@ Target Target::new_to_pointer(std::unique_ptr<io::TargetInterface> target) {
         g_object_new(WESERV_TYPE_TARGET, "target", target.get(), nullptr));
 
     if (vips_object_build(VIPS_OBJECT(weserv_target)) != 0) {
-        VIPS_UNREF(weserv_target);
+        VIPS_UNREF(weserv_target);  // LCOV_EXCL_START
         throw vips::VError();
+        // LCOV_EXCL_STOP
     }
 
     return Target(weserv_target);
@@ -82,7 +85,7 @@ Target Target::new_to_file(const std::string &filename) {
     VipsTarget *target = vips_target_new_to_file(filename.c_str());
 
     if (target == nullptr) {
-        throw vips::VError();
+        throw vips::VError();  // LCOV_EXCL_LINE
     }
 
     return Target(target);
@@ -92,7 +95,7 @@ Target Target::new_to_memory() {
     VipsTarget *target = vips_target_new_to_memory();
 
     if (target == nullptr) {
-        throw vips::VError();
+        throw vips::VError();  // LCOV_EXCL_LINE
     }
 
     return Target(target);

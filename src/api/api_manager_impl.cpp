@@ -78,7 +78,8 @@ ApiManagerImpl::ApiManagerImpl(std::unique_ptr<ApiEnvInterface> env)
         vips_error_clear();
 
         env_->log_error("error: Unable to start up libvips: " + error);
-    }  // LCOV_EXCL_STOP
+        // LCOV_EXCL_STOP
+    }
 }
 
 ApiManagerImpl::~ApiManagerImpl() {
@@ -142,8 +143,8 @@ Status ApiManagerImpl::exception_handler(const std::string &query) {
 
         return {Status::Code::Unknown, error_str,
                 Status::ErrorCause::Application};
+        // LCOV_EXCL_STOP
     }
-    // LCOV_EXCL_STOP
 }
 
 utils::Status ApiManagerImpl::process(const std::string &query,
