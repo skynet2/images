@@ -1,5 +1,5 @@
-# Note: The FetchContent module was added in CMake 3.11
-cmake_minimum_required(VERSION 3.11)
+# Note: FetchContent_MakeAvailable was added in CMake 3.14
+cmake_minimum_required(VERSION 3.14)
 
 project(weserv
         VERSION 5.0.0
