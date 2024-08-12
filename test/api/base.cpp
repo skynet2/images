@@ -1,8 +1,6 @@
 #include "base.h"
 
-#define CATCH_CONFIG_RUNNER
-
-#include <catch2/catch.hpp>
+#include <catch2/catch_session.hpp>
 
 #include "test_environment.h"
 
@@ -135,7 +133,7 @@ int main(const int argc, const char *argv[]) {
 
     auto cli =
         session.cli() |
-        Catch::clara::Opt(fixtures_dir,
+        Catch::Clara::Opt(fixtures_dir,
                           "fixtures directory")["-F"]["--fixtures-directory"](
             "change fixtures directory");
 

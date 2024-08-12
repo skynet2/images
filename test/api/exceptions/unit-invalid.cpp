@@ -1,8 +1,9 @@
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
 #include "../base.h"
 
-using Catch::Matchers::Contains;
+using Catch::Matchers::ContainsSubstring;
 
 TEST_CASE("invalid image", "[invalid]") {
     SECTION("buffer") {
@@ -13,7 +14,7 @@ TEST_CASE("invalid image", "[invalid]") {
         CHECK(status.code() == static_cast<int>(Status::Code::InvalidImage));
         CHECK(status.error_cause() == Status::ErrorCause::Application);
         CHECK_THAT(status.message(),
-                   Contains("Invalid or unsupported image format"));
+                   ContainsSubstring("Invalid or unsupported image format"));
     }
     SECTION("file") {
         auto test_file = fixtures->dir + "/doesnotexist.jpg";
@@ -23,7 +24,7 @@ TEST_CASE("invalid image", "[invalid]") {
         CHECK(status.code() == static_cast<int>(Status::Code::InvalidImage));
         CHECK(status.error_cause() == Status::ErrorCause::Application);
         CHECK_THAT(status.message(),
-                   Contains("Invalid or unsupported image format"));
+                   ContainsSubstring("Invalid or unsupported image format"));
     }
     SECTION("source") {
         class InvalidSource : public SourceInterface {
@@ -55,7 +56,7 @@ TEST_CASE("invalid image", "[invalid]") {
         CHECK(status.code() == static_cast<int>(Status::Code::InvalidImage));
         CHECK(status.error_cause() == Status::ErrorCause::Application);
         CHECK_THAT(status.message(),
-                   Contains("Invalid or unsupported image format"));
+                   ContainsSubstring("Invalid or unsupported image format"));
     }
     SECTION("empty source") {
         if (vips_version(0) < 8 ||
@@ -81,6 +82,6 @@ TEST_CASE("invalid image", "[invalid]") {
         CHECK(status.code() == static_cast<int>(Status::Code::InvalidImage));
         CHECK(status.error_cause() == Status::ErrorCause::Application);
         CHECK_THAT(status.message(),
-                   Contains("Invalid or unsupported image format"));
+                   ContainsSubstring("Invalid or unsupported image format"));
     }
 }

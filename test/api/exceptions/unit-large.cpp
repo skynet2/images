@@ -1,8 +1,9 @@
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
 #include "../base.h"
 
-using Catch::Matchers::Contains;
+using Catch::Matchers::ContainsSubstring;
 
 TEST_CASE("too large image", "[large]") {
     SECTION("input") {
@@ -18,7 +19,7 @@ TEST_CASE("too large image", "[large]") {
         CHECK(status.code() == static_cast<int>(Status::Code::ImageTooLarge));
         CHECK(status.error_cause() == Status::ErrorCause::Application);
         CHECK_THAT(status.message(),
-                   Contains("Input image exceeds pixel limit."));
+                   ContainsSubstring("Input image exceeds pixel limit."));
     }
 
     SECTION("output") {
@@ -32,7 +33,7 @@ TEST_CASE("too large image", "[large]") {
         CHECK(status.code() == static_cast<int>(Status::Code::ImageTooLarge));
         CHECK(status.error_cause() == Status::ErrorCause::Application);
         CHECK_THAT(status.message(),
-                   Contains("Output image exceeds pixel limit."));
+                   ContainsSubstring("Output image exceeds pixel limit."));
         CHECK(out_buf.empty());
     }
 }
@@ -53,9 +54,9 @@ TEST_CASE("too many pages", "[large]") {
         CHECK(!status.ok());
         CHECK(status.code() == static_cast<int>(Status::Code::ImageTooLarge));
         CHECK(status.error_cause() == Status::ErrorCause::Application);
-        CHECK_THAT(
-            status.message(),
-            Contains("Input image exceeds the maximum number of pages."));
+        CHECK_THAT(status.message(),
+                   ContainsSubstring(
+                       "Input image exceeds the maximum number of pages."));
         CHECK(out_buf.empty());
     }
 }

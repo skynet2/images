@@ -1,4 +1,5 @@
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
 #include "../base.h"
 
@@ -6,7 +7,7 @@
 #include <fstream>
 #include <vips/vips8>
 
-using Catch::Matchers::Contains;
+using Catch::Matchers::ContainsSubstring;
 using Catch::Matchers::Equals;
 using Catch::Matchers::StartsWith;
 using vips::VImage;
@@ -122,9 +123,9 @@ TEST_CASE("output", "[stream]") {
 
         std::string buffer = process_file<std::string>(test_image, params);
 
-        CHECK_THAT(buffer, Contains(R"("format":"jpeg")"));
-        CHECK_THAT(buffer, Contains(R"("width":300)"));
-        CHECK_THAT(buffer, Contains(R"("height":300)"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("format":"jpeg")"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("width":300)"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("height":300)"));
     }
 
     SECTION("origin") {
@@ -323,10 +324,10 @@ TEST_CASE("gif options", "[stream]") {
 
         std::string buffer = process_file<std::string>(test_image, params);
 
-        CHECK_THAT(buffer, Contains(R"("format":"gif")"));
-        CHECK_THAT(buffer, Contains(R"("pages":8)"));
-        CHECK_THAT(buffer, Contains(R"("pageHeight":1050)"));
-        CHECK_THAT(buffer, Contains(R"("loop":1)"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("format":"gif")"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("pages":8)"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("pageHeight":1050)"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("loop":1)"));
     }
 
     SECTION("frame delay") {
@@ -340,10 +341,10 @@ TEST_CASE("gif options", "[stream]") {
 
         std::string buffer = process_file<std::string>(test_image, params);
 
-        CHECK_THAT(buffer, Contains(R"("format":"gif")"));
-        CHECK_THAT(buffer, Contains(R"("pages":8)"));
-        CHECK_THAT(buffer, Contains(R"("pageHeight":1050)"));
-        CHECK_THAT(buffer, Contains(R"("delay":[200)"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("format":"gif")"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("pages":8)"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("pageHeight":1050)"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("delay":[200)"));
     }
 
     SECTION("page height") {
@@ -357,10 +358,10 @@ TEST_CASE("gif options", "[stream]") {
 
         std::string buffer = process_file<std::string>(test_image, params);
 
-        CHECK_THAT(buffer, Contains(R"("format":"gif")"));
-        CHECK_THAT(buffer, Contains(R"("pages":8)"));
-        CHECK_THAT(buffer, Contains(R"("height":7640)"));
-        CHECK_THAT(buffer, Contains(R"("pageHeight":955)"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("format":"gif")"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("pages":8)"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("height":7640)"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("pageHeight":955)"));
     }
 }
 
@@ -371,10 +372,11 @@ TEST_CASE("metadata", "[stream]") {
 
         std::string buffer = process_file<std::string>(test_image, params);
 
-        CHECK_THAT(buffer, Contains(R"("format":"jpeg")"));
-        CHECK_THAT(buffer, Contains(R"("chromaSubsampling":"4:4:4:4")"));
-        CHECK_THAT(buffer, Contains(R"("isProgressive":false)"));
-        CHECK_THAT(buffer, Contains(R"("density":180)"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("format":"jpeg")"));
+        CHECK_THAT(buffer,
+                   ContainsSubstring(R"("chromaSubsampling":"4:4:4:4")"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("isProgressive":false)"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("density":180)"));
     }
 
     SECTION("png 8 bit paletted") {
@@ -383,8 +385,8 @@ TEST_CASE("metadata", "[stream]") {
 
         std::string buffer = process_file<std::string>(test_image, params);
 
-        CHECK_THAT(buffer, Contains(R"("format":"png")"));
-        CHECK_THAT(buffer, Contains(R"("paletteBitDepth":8)"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("format":"png")"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("paletteBitDepth":8)"));
     }
 
     SECTION("webp") {
@@ -398,7 +400,7 @@ TEST_CASE("metadata", "[stream]") {
 
         std::string buffer = process_file<std::string>(test_image, params);
 
-        CHECK_THAT(buffer, Contains(R"("format":"webp")"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("format":"webp")"));
     }
 
     SECTION("avif") {
@@ -412,7 +414,7 @@ TEST_CASE("metadata", "[stream]") {
 
         std::string buffer = process_file<std::string>(test_image, params);
 
-        CHECK_THAT(buffer, Contains(R"("format":"heif")"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("format":"heif")"));
     }
 
     SECTION("tiff") {
@@ -426,7 +428,7 @@ TEST_CASE("metadata", "[stream]") {
 
         std::string buffer = process_file<std::string>(test_image, params);
 
-        CHECK_THAT(buffer, Contains(R"("format":"tiff")"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("format":"tiff")"));
     }
 
     SECTION("svg") {
@@ -440,7 +442,7 @@ TEST_CASE("metadata", "[stream]") {
 
         std::string buffer = process_file<std::string>(test_image, params);
 
-        CHECK_THAT(buffer, Contains(R"("format":"svg")"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("format":"svg")"));
     }
 
     SECTION("pdf") {
@@ -454,7 +456,7 @@ TEST_CASE("metadata", "[stream]") {
 
         std::string buffer = process_file<std::string>(test_image, params);
 
-        CHECK_THAT(buffer, Contains(R"("format":"pdf")"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("format":"pdf")"));
     }
 
     SECTION("heic") {
@@ -468,8 +470,8 @@ TEST_CASE("metadata", "[stream]") {
 
         std::string buffer = process_file<std::string>(test_image, params);
 
-        CHECK_THAT(buffer, Contains(R"("format":"heif")"));
-        CHECK_THAT(buffer, Contains(R"("pagePrimary":0)"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("format":"heif")"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("pagePrimary":0)"));
     }
 
     SECTION("magick") {
@@ -483,6 +485,6 @@ TEST_CASE("metadata", "[stream]") {
 
         std::string buffer = process_file<std::string>(test_image, params);
 
-        CHECK_THAT(buffer, Contains(R"("format":"magick")"));
+        CHECK_THAT(buffer, ContainsSubstring(R"("format":"magick")"));
     }
 }

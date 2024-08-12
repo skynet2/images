@@ -1,8 +1,9 @@
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
+#include <catch2/matchers/catch_matchers_string.hpp>
 
 #include "../base.h"
 
-using Catch::Matchers::Contains;
+using Catch::Matchers::ContainsSubstring;
 
 TEST_CASE("unreadable image", "[unreadable]") {
     SECTION("buffer") {
@@ -18,6 +19,6 @@ TEST_CASE("unreadable image", "[unreadable]") {
         CHECK(status.code() ==
               static_cast<int>(Status::Code::ImageNotReadable));
         CHECK(status.error_cause() == Status::ErrorCause::Application);
-        CHECK_THAT(status.message(), Contains("Image not readable"));
+        CHECK_THAT(status.message(), ContainsSubstring("Image not readable"));
     }
 }

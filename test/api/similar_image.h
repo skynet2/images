@@ -1,6 +1,6 @@
 #pragma once
 
-#include <catch2/catch.hpp>
+#include <catch2/matchers/catch_matchers.hpp>
 #include <vips/vips8>
 
 using vips::VImage;
@@ -8,7 +8,7 @@ using vips::VImage;
 /**
  * The similar image matcher class
  */
-class SimilarImage : public Catch::MatcherBase<VImage> {
+class SimilarImage : public Catch::Matchers::MatcherBase<VImage> {
  public:
     explicit SimilarImage(const VImage &expected, const int threshold)
         : expected_hash_(dhash(expected)), threshold_(threshold) {}
