@@ -35,7 +35,7 @@ class Mask : ImageProcessor {
                                  int *out_width, int *out_height) const;
 
     /**
-     * Formula from http://mathworld.wolfram.com/HeartCurve.html
+     * Formula from https://mathworld.wolfram.com/HeartCurve.html
      * @param cx The x coordinate of the center of the image.
      * @param cy The y coordinate of the center of the image.
      * @return The circle represented as SVG path.
