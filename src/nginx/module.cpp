@@ -16,9 +16,10 @@ namespace weserv::nginx {
 
 namespace {
 /**
- * The module's location callback directive.
+ * The module's location callback directives.
  */
 char *ngx_weserv(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
+char *ngx_weserv_deny_ip(ngx_conf_t *cf, ngx_command_t *cmd, void *conf);
 
 /**
  * Configuration - function declarations.
@@ -103,6 +104,14 @@ ngx_command_t ngx_weserv_commands[] = {
      NGX_HTTP_LOC_CONF_OFFSET,
      offsetof(ngx_weserv_loc_conf_t, mode),
      &ngx_weserv_mode},
+
+    {ngx_string("weserv_deny_ip"),
+     NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF |
+         NGX_CONF_TAKE1,
+     ngx_weserv_deny_ip,
+     NGX_HTTP_LOC_CONF_OFFSET,
+     0,
+     nullptr},
 
     {ngx_string("weserv_connect_timeout"),
      NGX_HTTP_MAIN_CONF | NGX_HTTP_SRV_CONF | NGX_HTTP_LOC_CONF |
@@ -351,7 +360,7 @@ ngx_http_module_t ngx_weserv_module_ctx = {
 };
 
 /**
- * The module's location callback directive.
+ * The module's location callback directives.
  */
 char *ngx_weserv(ngx_conf_t *cf, ngx_command_t *cmd, void *conf) {
     auto *clcf = reinterpret_cast<ngx_http_core_loc_conf_t *>(
@@ -369,6 +378,39 @@ char *ngx_weserv(ngx_conf_t *cf, ngx_command_t *cmd, void *conf) {
     }
 
     lc->enable = 1;
+
+    return NGX_CONF_OK;
+}
+
+char *ngx_weserv_deny_ip(ngx_conf_t *cf, ngx_command_t *cmd, void *conf) {
+    auto *lc = reinterpret_cast<ngx_weserv_loc_conf_t *>(conf);
+
+    ngx_str_t *value = reinterpret_cast<ngx_str_t *>(cf->args->elts);
+
+    if (lc->deny == nullptr) {
+        lc->deny = ngx_array_create(cf->pool, 2, sizeof(ngx_cidr_t));
+        if (lc->deny == nullptr) {
+            return reinterpret_cast<char *>(NGX_CONF_ERROR);
+        }
+    }
+
+    ngx_cidr_t c;
+    ngx_int_t rc = ngx_ptocidr(&value[1], &c);
+    if (rc == NGX_ERROR) {
+        return reinterpret_cast<char *>(NGX_CONF_ERROR);
+    }
+
+    if (rc == NGX_DONE) {
+        ngx_conf_log_error(NGX_LOG_WARN, cf, 0,
+                           "low address bits of %V are meaningless", &value[1]);
+    }
+
+    ngx_cidr_t *cidr = reinterpret_cast<ngx_cidr_t *>(ngx_array_push(lc->deny));
+    if (cidr == nullptr) {
+        return reinterpret_cast<char *>(NGX_CONF_ERROR);
+    }
+
+    *cidr = c;
 
     return NGX_CONF_OK;
 }
@@ -401,8 +443,11 @@ void *ngx_weserv_create_loc_conf(ngx_conf_t *cf) {
 
     // The hardcoded values
     lc->upstream_conf.buffering = 1;
-    lc->upstream_conf.buffer_size = ngx_pagesize;
-    lc->upstream_conf.busy_buffers_size = 2 * ngx_pagesize;
+    lc->upstream_conf.buffer_size =
+        4 * ngx_pagesize;  // 4 memory pages should be enough for most response
+                           // headers
+    lc->upstream_conf.busy_buffers_size =
+        6 * ngx_pagesize;  // Essentially, buffer_size + 2 memory pages
     lc->upstream_conf.bufs.num = 256;
     lc->upstream_conf.bufs.size = ngx_pagesize;
     lc->upstream_conf.max_temp_file_size = 0;
@@ -501,6 +546,10 @@ char *ngx_weserv_merge_loc_conf(ngx_conf_t *cf, void *parent, void *child) {
 
     ngx_conf_merge_value(conf->enable, prev->enable, 0);
     ngx_conf_merge_uint_value(conf->mode, prev->mode, NGX_WESERV_PROXY_MODE);
+
+    if (conf->deny == NULL) {
+        conf->deny = prev->deny;
+    }
 
     ngx_conf_merge_str_value(conf->user_agent, prev->user_agent,
                              "Mozilla/5.0 (compatible; ImageFetcher/9.0; "
@@ -794,7 +843,8 @@ ngx_int_t ngx_weserv_image_body_filter(ngx_http_request_t *r, ngx_chain_t *in) {
 #endif
         ) {
             ngx_chain_t out;
-            if (ngx_weserv_return_error(r, upstream_ctx->response_status,
+            if (ngx_weserv_return_error(r, upstream_ctx,
+                                        upstream_ctx->response_status,
                                         &out) != NGX_OK) {
                 return NGX_ERROR;
             }
@@ -829,7 +879,7 @@ ngx_int_t ngx_weserv_image_body_filter(ngx_http_request_t *r, ngx_chain_t *in) {
         ngx_str_to_std(r->args),
         std::unique_ptr<api::io::SourceInterface>(new NgxSource(ctx->in)),
         std::unique_ptr<api::io::TargetInterface>(
-            new NgxTarget(upstream_ctx, r, &out)),
+            new NgxTarget(r, upstream_ctx, &out)),
         lc->api_conf);
 
     r->connection->buffered &= ~NGX_WESERV_IMAGE_BUFFERED;
@@ -840,7 +890,8 @@ ngx_int_t ngx_weserv_image_body_filter(ngx_http_request_t *r, ngx_chain_t *in) {
 
     if (!status.ok()) {
         ngx_chain_t error;
-        if (ngx_weserv_return_error(r, status, &error) != NGX_OK) {
+        if (ngx_weserv_return_error(r, upstream_ctx, status, &error) !=
+            NGX_OK) {
             return NGX_ERROR;
         }
 

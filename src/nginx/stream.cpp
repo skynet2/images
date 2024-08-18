@@ -154,7 +154,7 @@ int64_t NgxTarget::read(void *data, size_t length) {
     return bytes_read;
 }
 
-off_t NgxTarget::seek(off_t offset, int whence) {
+int64_t NgxTarget::seek(int64_t offset, int whence) {
     switch (whence) {
         case SEEK_SET:
             seek_cl_ = *first_ll_;
@@ -191,17 +191,15 @@ int NgxTarget::end() {
 
     // Only set the Content-Disposition header on images
     if (!is_base64_needed(r_) &&
-        !ngx_string_equal(mime_type, application_json)) {
-        if (set_content_disposition_header(r_, extension_) != NGX_OK) {
-            return -1;
-        }
+        !ngx_string_equal(mime_type, application_json) &&
+        set_content_disposition_header(r_, extension_) != NGX_OK) {
+        return -1;
     }
 
     // Only set the Link header if there's an upstream context available
-    if (upstream_ctx_ != nullptr) {
-        if (set_link_header(r_, upstream_ctx_->canonical) != NGX_OK) {
-            return -1;
-        }
+    if (upstream_ctx_ != nullptr &&
+        set_link_header(r_, upstream_ctx_->canonical) != NGX_OK) {
+        return -1;
     }
 
     time_t max_age = MAX_AGE_DEFAULT;

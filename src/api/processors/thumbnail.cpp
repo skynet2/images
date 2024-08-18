@@ -1,6 +1,7 @@
 #include "thumbnail.h"
 
 #include "../exceptions/large.h"
+#include "../io/blob.h"
 
 #include <algorithm>
 #include <cmath>
@@ -18,6 +19,7 @@ using enums::ImageType;
 // NOTE: Can be overridden with `&fsol=0`.
 const bool FAST_SHRINK_ON_LOAD = true;
 
+using io::Blob;
 using io::Source;
 
 template <>
@@ -28,11 +30,9 @@ Thumbnail::new_from_source<ImageType::Jpeg>(const Source &source,
     return VImage::jpegload_source(source, options);
 #else
     // We don't take a copy of the data or free it
-    auto *blob =
-        vips_blob_new(nullptr, source.buffer().data(), source.buffer().size());
-    auto image = VImage::jpegload_buffer(blob, options);
-    vips_area_unref(reinterpret_cast<VipsArea *>(blob));
-    return image;
+    auto blob = Blob(
+        vips_blob_new(nullptr, source.buffer().data(), source.buffer().size()));
+    return VImage::jpegload_buffer(blob.get_blob(), options);
 #endif
 }
 
@@ -44,11 +44,9 @@ Thumbnail::new_from_source<ImageType::Pdf>(const Source &source,
     return VImage::pdfload_source(source, options);
 #else
     // We don't take a copy of the data or free it
-    auto *blob =
-        vips_blob_new(nullptr, source.buffer().data(), source.buffer().size());
-    auto image = VImage::pdfload_buffer(blob, options);
-    vips_area_unref(reinterpret_cast<VipsArea *>(blob));
-    return image;
+    auto blob = Blob(
+        vips_blob_new(nullptr, source.buffer().data(), source.buffer().size()));
+    return VImage::pdfload_buffer(blob.get_blob(), options);
 #endif
 }
 
@@ -60,11 +58,9 @@ Thumbnail::new_from_source<ImageType::Webp>(const Source &source,
     return VImage::webpload_source(source, options);
 #else
     // We don't take a copy of the data or free it
-    auto *blob =
-        vips_blob_new(nullptr, source.buffer().data(), source.buffer().size());
-    auto image = VImage::webpload_buffer(blob, options);
-    vips_area_unref(reinterpret_cast<VipsArea *>(blob));
-    return image;
+    auto blob = Blob(
+        vips_blob_new(nullptr, source.buffer().data(), source.buffer().size()));
+    return VImage::webpload_buffer(blob.get_blob(), options);
 #endif
 }
 
@@ -76,11 +72,9 @@ Thumbnail::new_from_source<ImageType::Tiff>(const Source &source,
     return VImage::tiffload_source(source, options);
 #else
     // We don't take a copy of the data or free it
-    auto *blob =
-        vips_blob_new(nullptr, source.buffer().data(), source.buffer().size());
-    auto image = VImage::tiffload_buffer(blob, options);
-    vips_area_unref(reinterpret_cast<VipsArea *>(blob));
-    return image;
+    auto blob = Blob(
+        vips_blob_new(nullptr, source.buffer().data(), source.buffer().size()));
+    return VImage::tiffload_buffer(blob.get_blob(), options);
 #endif
 }
 
@@ -105,11 +99,9 @@ Thumbnail::new_from_source<ImageType::Svg>(const Source &source,
     return VImage::svgload_source(source, options);
 #else
     // We don't take a copy of the data or free it
-    auto *blob =
-        vips_blob_new(nullptr, source.buffer().data(), source.buffer().size());
-    auto image = VImage::svgload_buffer(blob, options);
-    vips_area_unref(reinterpret_cast<VipsArea *>(blob));
-    return image;
+    auto blob = Blob(
+        vips_blob_new(nullptr, source.buffer().data(), source.buffer().size()));
+    return VImage::svgload_buffer(blob.get_blob(), options);
 #endif
 }
 
@@ -121,25 +113,14 @@ Thumbnail::new_from_source<ImageType::Heif>(const Source &source,
     return VImage::heifload_source(source, options);
 #else
     // We don't take a copy of the data or free it
-    auto *blob =
-        vips_blob_new(nullptr, source.buffer().data(), source.buffer().size());
-    auto image = VImage::heifload_buffer(blob, options);
-    vips_area_unref(reinterpret_cast<VipsArea *>(blob));
-    return image;
+    auto blob = Blob(
+        vips_blob_new(nullptr, source.buffer().data(), source.buffer().size()));
+    return VImage::heifload_buffer(blob.get_blob(), options);
 #endif
 }
 
 std::pair<double, double> Thumbnail::resolve_shrink(int width,
                                                     int height) const {
-    auto rotation = query_->get<int>("angle", 0);
-    auto precrop = query_->get<bool>("precrop", false);
-    auto swap = !precrop && (rotation == 90 || rotation == 270);
-
-    if (swap) {
-        // Swap input width and height when rotating by 90 or 270 degrees
-        std::swap(width, height);
-    }
-
     double hshrink = 1.0;
     double vshrink = 1.0;
 
@@ -171,9 +152,6 @@ std::pair<double, double> Thumbnail::resolve_shrink(int width,
                 }
                 break;
             case Canvas::IgnoreAspect:
-                if (swap) {
-                    std::swap(hshrink, vshrink);
-                }
                 break;
         }
     } else if (target_width > 0) {
@@ -323,14 +301,7 @@ int Thumbnail::resolve_tiff_pyramid(const VImage &image, const Source &source,
 
 void Thumbnail::append_page_options(vips::VOption *options) const {
     auto n = query_->get<int>("n");
-    auto page = query_->get_if<int>(
-        "page",
-        [](int p) {
-            // Page needs to be in the range of
-            // 0 (numbered from zero) - 100000
-            return p >= 0 && p <= 100000;
-        },
-        0);
+    auto page = query_->get<int>("page");
 
     options->set("n", n);
     options->set("page", page);
@@ -430,10 +401,9 @@ VImage Thumbnail::process(const VImage &image) const {
 
     // To the processing colourspace. This will unpack LABQ, import CMYK
     // etc.
-    auto thumb =
-        has_icc_profile
-            ? image  // Transformed with a pair of ICC profiles below.
-            : image.colourspace(VIPS_INTERPRETATION_sRGB);
+    auto thumb = has_icc_profile
+                     ? image  // Transformed with a pair of ICC profiles below.
+                     : image.colourspace(VIPS_INTERPRETATION_sRGB);
 
     // So page_height is after pre-shrink, but before the main shrink stage
     // Pre-resize extract needs to fetch the page height from the query holder
@@ -475,15 +445,17 @@ VImage Thumbnail::process(const VImage &image) const {
             std::to_string(config_.limit_output_pixels));
     }
 
-    // If there's an alpha, we have to premultiply before shrinking. See
-    // https://github.com/libvips/libvips/issues/291
+    // Both .premultiply() and .unpremultiply() produces a float image, so we
+    // must cast back to the original format. Use NOTSET to mean no
+    // pre/unmultiply.
     VipsBandFormat unpremultiplied_format = VIPS_FORMAT_NOTSET;
+
+    // If there's an alpha, we have to premultiply before shrinking.
+    // See: https://github.com/libvips/libvips/issues/291
     if (thumb.has_alpha() && hshrink != 1.0 && vshrink != 1.0) {
-        // .premultiply() makes a float image. When we .unpremultiply() below,
-        // we need to cast back to the pre-premultiply format.
         unpremultiplied_format = thumb.format();
 
-        thumb = thumb.premultiply();
+        thumb = thumb.premultiply().cast(unpremultiplied_format);
     }
 
     thumb = thumb.resize(1.0 / hshrink,
@@ -497,15 +469,25 @@ VImage Thumbnail::process(const VImage &image) const {
 
     // Colour management.
     if (has_icc_profile) {
+#if VIPS_VERSION_AT_LEAST(8, 11, 0)
+        // Ensure images with P3 profiles retain full gamut.
+        const char *processing_profile =
+            image.interpretation() == VIPS_INTERPRETATION_RGB16 ? "p3" : "srgb";
+#else
+        // P3 fallback built-in profile not available.
+        const char *processing_profile = "srgb";
+#endif
+
         // If there's some kind of import profile, we can transform to the
         // output.
         thumb = thumb.icc_transform(
-            "srgb", VImage::option()
-                        // Fallback to srgb
-                        ->set("input_profile", "srgb")
-                        // Use "perceptual" intent to better match *magick
-                        ->set("intent", VIPS_INTENT_PERCEPTUAL)
-                        ->set("embedded", true));
+            processing_profile,
+            VImage::option()
+                ->set("embedded", true)
+                ->set("depth",
+                      utils::is_16_bit(image.interpretation()) ? 16 : 8)
+                // Use "perceptual" intent to better match *magick
+                ->set("intent", VIPS_INTENT_PERCEPTUAL));
     }
 
     return thumb;

@@ -1,5 +1,5 @@
-# Note: The FetchContent module was added in CMake 3.11
-cmake_minimum_required(VERSION 3.11)
+# Note: FetchContent_MakeAvailable was added in CMake 3.14
+cmake_minimum_required(VERSION 3.14)
 
 project(weserv
         VERSION 5.0.0
@@ -70,7 +70,7 @@ include(FetchContent)
 include(GNUInstallDirs)
 
 # Find Catch2 (optional)
-find_package(Catch2 2.7.1 QUIET)
+find_package(Catch2 3.0.1 QUIET)
 
 # Find libvips (required)
 find_package(PkgConfig)
@@ -86,7 +86,7 @@ endif()
 if (BUILD_TESTS)
     enable_testing()
 
-    # Build Catch2 (a header-only test framework), if necessary
+    # Build Catch2 (a modern test framework), if necessary
     if (NOT Catch2_FOUND)
         add_subdirectory(third_party/catch2)
     endif()

@@ -17,18 +17,15 @@ jobs:
       fail-fast: true
       matrix:
         include:
-          # TODO(kleisauke): Enable once magickload_source is supported
-          # - os: ubuntu-22.04
-          #   libvips-version: master
-          - os: ubuntu-22.04
-            libvips-version: 8.14.2
+          - os: ubuntu-24.04
+            libvips-version: 8.15.3
             coverage: true
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Cache libvips
         if: matrix.libvips-version != 'master'
         id: cache-libvips
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: ~/vips
           key: ${{ matrix.libvips-version }}
@@ -42,18 +39,19 @@ jobs:
           sudo apt-get update
           sudo apt-get install \
             meson \
+            libtest-nginx-perl \
             libcgif-dev libexif-dev libexpat1-dev \
-            libheif-dev libimagequant-dev liblcms2-dev \
-            libmagickcore-dev liborc-0.4-dev libpango1.0-dev \
-            libpng-dev libpoppler-glib-dev librsvg2-dev \
-            libtiff5-dev libwebp-dev \
-            libtest-nginx-perl
+            libheif-dev libheif-plugin-aomenc libheif-plugin-x265 \
+            libhwy-dev libimagequant-dev libjxl-dev \
+            liblcms2-dev libmagickcore-dev libopenjp2-7-dev \
+            libpango1.0-dev libpoppler-glib-dev librsvg2-dev \
+            libspng-dev libtiff5-dev libwebp-dev
       - name: Install libvips
         if: steps.cache-libvips.outputs.cache-hit != 'true'
         env:
           VIPS_VERSION: ${{ matrix.libvips-version }}
           VIPS_PRE_VERSION: ${{ matrix.libvips-pre-version }}
-        run: .ci/install-vips.sh -Ddeprecated=false -Dintrospection=false
+        run: .ci/install-vips.sh -Ddeprecated=false -Dintrospection=disabled
       - name: Prepare environment
         run: |
           echo "$HOME/vips/bin" >> $GITHUB_PATH
@@ -81,20 +79,19 @@ jobs:
         run: prove -r test/nginx
       - name: Upload coverage to Codecov
         if: matrix.coverage
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
-          gcov: true
-          gcov_ignore: test/api
+          token: ${{ secrets.CODECOV_TOKEN }}
   docker-publish:
     needs: CI
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           submodules: true
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v4
+        uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository }}
           # Add git branch, tag and short SHA as Docker tag
@@ -114,13 +111,13 @@ jobs:
             org.opencontainers.image.vendor=wsrv.nl
       - name: Login to GitHub Container Registry
         if: github.event_name != 'pull_request'
-        uses: docker/login-action@v2
+        uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ secrets.CR_USER }}
           password: ${{ secrets.CR_PAT }}
       - name: Build and push
-        uses: docker/build-push-action@v3
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: ./docker/Dockerfile

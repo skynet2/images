@@ -31,9 +31,13 @@ Requires libvips 8.9+.
 - `/clear-cache` API endpoint ([#272](https://github.com/weserv/images/issues/272)).
 - `$weserv_response_length` embedded nginx variable.
 - Additional response headers ([#325](https://github.com/weserv/images/issues/325)).
-- Support multi-frame images when embedding/cropping/masking.
+- Support multi-frame images for various operations (embed, crop, mask and orient).
 - The `weserv_canonical_header` nginx directive ([#309](https://github.com/weserv/images/issues/309)).
 - Client-side DNS failover mechanism ([#331](https://github.com/weserv/images/issues/331)).
+- The `weserv_deny_ip` nginx directive.
+- Support for `&default=1` ([#371](https://github.com/weserv/images/issues/371)).
+- Support for percentage-based values for some parameters ([#384](https://github.com/weserv/images/issues/384)).
+- Support for lossless encoding of WebP images (`&ll`) ([#386](https://github.com/weserv/images/issues/386)).
 
 ### Changed
 - Migrate Docker base image to Rocky Linux 9.
@@ -48,6 +52,9 @@ Requires libvips 8.9+.
 - Build nginx with `--with-http_secure_link_module` by default.
 - Migrate from PCRE to PCRE2.
 - Modernize code to C++17.
+- Use jemalloc in the glibc-based Dockerfile.
+- Improve ICC profile conversion.
+- Speed-up thumbnailing of RGBA images.
 
 ### Fixed
 - Compatibility with CMake < 3.12.
@@ -67,6 +74,10 @@ Requires libvips 8.9+.
 - Compatibility with mixed C++ ABIs ([#338](https://github.com/weserv/images/issues/338)).
 - Prevent upsizing via libwebp.
 - Honor the `VIPS_MIN_STACK_SIZE` and `VIPS_BLOCK_UNTRUSTED` env variables.
+- Ensure use of flip forces random access read.
+- The maximum values of the sharpen operation ([#357](https://github.com/weserv/images/issues/357)).
+- Bump buffer size for HTTP response headers ([#378](https://github.com/weserv/images/issues/378)).
+- Ensure correct dimensions for 90/270 rotate.
 
 ### Deprecated
 | Before               | Use instead                             |
@@ -195,7 +206,7 @@ With the magical help of [libvips](https://github.com/libvips/libvips) and the P
 - A Docker image for easier deployment. See the [Docker installation instructions](docker/README.md).
 
 ### Changed
-- Dropped [Intervention Image](http://image.intervention.io/) in favor of [php-vips](https://github.com/libvips/php-vips) because resizing an image with [libvips](https://github.com/libvips/libvips) is typically 4x-5x faster than using the quickest ImageMagick.
+- Dropped [Intervention Image](https://image.intervention.io/) in favor of [php-vips](https://github.com/libvips/php-vips) because resizing an image with [libvips](https://github.com/libvips/libvips) is typically 4x-5x faster than using the quickest ImageMagick.
 - We're now using the [uri package](https://github.com/thephpleague/uri) in order to parse URIs correctly. This is a drop-in replacement to PHP’s `parse_url` function.
 
 ### Deprecated
@@ -215,7 +226,7 @@ This version was never used in production, it's only used for testing purposes, 
 ### Added
 - Add CHANGELOG.md based on [’Keep a CHANGELOG’](https://github.com/olivierlacan/keep-a-changelog).
 - Composer ready and [PSR-2](https://www.php-fig.org/psr/psr-2/) compliant.
-- Used the [Intervention Image](http://image.intervention.io/) library for image handling and manipulation.
+- Used the [Intervention Image](https://image.intervention.io/) library for image handling and manipulation.
 - Used the [Guzzle](https://github.com/guzzle/guzzle) library for sending HTTP requests.
 
 ## [1.0.0] - started 2007-09-10

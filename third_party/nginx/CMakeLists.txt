@@ -1,5 +1,5 @@
 if (NOT NGX_VERSION)
-    set(NGX_VERSION 1.23.3)
+    set(NGX_VERSION 1.27.0)
 endif()
 
 set(NGX_ROOT ${CMAKE_CURRENT_BINARY_DIR})
@@ -38,11 +38,16 @@ else()
     set(MAKE_EXE "make")
 endif()
 
+# Avoid warning about DOWNLOAD_EXTRACT_TIMESTAMP on CMake 3.24.
+if (CMAKE_VERSION VERSION_GREATER_EQUAL 3.24.0)
+    cmake_policy(SET CMP0135 NEW)
+endif()
+
 ExternalProject_Add(nginx
         DEPENDS ${PROJECT_NAME}
         PREFIX ${NGX_ROOT}
         SOURCE_DIR ${NGX_ROOT}/nginx
-        URL http://nginx.org/download/nginx-${NGX_VERSION}.tar.gz
+        URL https://nginx.org/download/nginx-${NGX_VERSION}.tar.gz
         CONFIGURE_COMMAND ./configure ${NGX_CONFIGURE_OPTS}
         BUILD_COMMAND ${MAKE_EXE}
         BUILD_ALWAYS 1

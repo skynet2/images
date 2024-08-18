@@ -1,6 +1,7 @@
 #pragma once
 
 #include "color.h"
+#include "coordinate.h"
 
 #include <cstddef>
 #include <string>
@@ -11,8 +12,6 @@
 #include <variant>
 #include <vector>
 
-#include <weserv/config.h>
-
 namespace weserv::api::parsers {
 
 using TypeMap = std::unordered_map<std::string, std::type_index>;
@@ -21,7 +20,7 @@ using NginxKeySet = std::unordered_set<std::string>;
 
 class Query {
  public:
-    Query(const std::string &value, const Config &config);
+    explicit Query(const std::string &value);
 
     template <typename E,
               typename = typename std::enable_if<std::is_enum<E>::value>::type>
@@ -74,11 +73,9 @@ class Query {
     }
 
  private:
-    using QueryVariant = std::variant<bool, int, float, Color, std::vector<int>,
-                                      std::vector<float>>;
+    using QueryVariant = std::variant<bool, int, float, Color, Coordinate,
+                                      std::vector<int>, std::vector<float>>;
     std::unordered_map<std::string, QueryVariant> query_map_;
-
-    const Config &config_;
 
     template <typename T>
     std::vector<T> tokenize(const std::string &data,

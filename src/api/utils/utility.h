@@ -87,20 +87,6 @@ inline int exif_orientation(const VImage &image) {
 }
 
 /**
- * Insert a line cache to prevent over-computation of
- * any previous operations in the pipeline.
- * @param image The source image.
- * @param tile_height Tile height in pixels
- * @return A new image.
- */
-inline VImage line_cache(const VImage &image, const int tile_height) {
-    return image.linecache(VImage::option()
-                               ->set("tile_height", tile_height)
-                               ->set("access", VIPS_ACCESS_SEQUENTIAL)
-                               ->set("threaded", true));
-}
-
-/**
  * Calculate the rotation for the given angle.
  * @note Assumes that a positive angle is given which is a multiple of 90.
  * @return Rotation as VipsAngle.
@@ -193,7 +179,8 @@ static void image_eval_cb(VipsImage *image, VipsProgress *progress,
         // We've killed the image and issued an error, it's now our caller's
         // responsibility to pass the message up the chain.
         *timeout = 0;
-    }  // LCOV_EXCL_STOP
+        // LCOV_EXCL_STOP
+    }
 }
 
 /**
@@ -217,6 +204,27 @@ inline void setup_timeout_handler(const VImage &image,
 
         vips_image_set_progress(vips_image, 1);
     }
+}
+
+/**
+ * Ensure decoding remains sequential.
+ * @param image The source image.
+ * @param process_timeout The specified process timeout.
+ * @return A new image.
+ */
+inline VImage stay_sequential(const VImage &image,
+                              const time_t process_timeout) {
+    if (!vips_image_is_sequential(image.get_image())) {
+        return image;
+    }
+
+    // Copy to memory evaluates the image, so set up the timeout handler,
+    // if necessary.
+    utils::setup_timeout_handler(image, process_timeout);
+
+    auto copy = image.copy_memory().copy();
+    copy.remove(VIPS_META_SEQUENTIAL);
+    return copy;
 }
 
 /**
@@ -285,9 +293,7 @@ inline ImageType determine_image_type(const std::string &loader) {
         return ImageType::Magick;
     }
 
-    // LCOV_EXCL_START
-    return ImageType::Unknown;
-    // LCOV_EXCL_STOP
+    return ImageType::Unknown;  // LCOV_EXCL_LINE
 }
 
 /**
@@ -318,19 +324,8 @@ inline std::string image_type_id(const ImageType &image_type) {
         case ImageType::Unknown:  // LCOV_EXCL_START
         default:
             return "unknown";
+        // LCOV_EXCL_STOP
     }
-    // LCOV_EXCL_STOP
-}
-
-/**
- * Does this image type support multiple pages?
- * @param image_type Image type to check.
- * @return A bool indicating if this image type support multiple pages.
- */
-inline bool support_multi_pages(const ImageType &image_type) {
-    return image_type == ImageType::Webp || image_type == ImageType::Tiff ||
-           image_type == ImageType::Gif || image_type == ImageType::Pdf ||
-           image_type == ImageType::Heif || image_type == ImageType::Magick;
 }
 
 /**
@@ -399,6 +394,7 @@ calculate_position(const int in_width, const int in_height, const int out_width,
 /**
  * Split/crop each frame and reassemble.
  * @param image The source image.
+ * @param process_timeout The specified process timeout.
  * @param left Crop x-position.
  * @param top Crop y-position.
  * @param width Crop width.
@@ -407,8 +403,9 @@ calculate_position(const int in_width, const int in_height, const int out_width,
  * @param page_height Page height.
  * @return A new image.
  */
-inline VImage crop_multi_page(const VImage &image, int left, int top, int width,
-                              int height, int n_pages, int page_height) {
+inline VImage crop_multi_page(const VImage &image, const time_t process_timeout,
+                              int left, int top, int width, int height,
+                              int n_pages, int page_height) {
     if (top == 0 && height == page_height) {
         // Fast path; no need to adjust the height of the multi-page image
         return image.extract_area(left, 0, width, image.height());
@@ -417,17 +414,16 @@ inline VImage crop_multi_page(const VImage &image, int left, int top, int width,
     std::vector<VImage> pages;
     pages.reserve(n_pages);
 
+    auto crop = stay_sequential(image, process_timeout);
+
     // Split the image into cropped frames
     for (int i = 0; i < n_pages; i++) {
         pages.push_back(
-            image.extract_area(left, page_height * i + top, width, height));
+            crop.extract_area(left, page_height * i + top, width, height));
     }
 
     // Reassemble the frames into a tall, thin image
-    VImage assembled =
-        VImage::arrayjoin(pages, VImage::option()->set("across", 1));
-
-    return assembled;
+    return VImage::arrayjoin(pages, VImage::option()->set("across", 1));
 }
 
 /**
@@ -533,8 +529,9 @@ inline std::string image_to_json(const VImage &image,
  * @param s The string to escape.
  * @return The escaped string.
  */
-inline std::string escape_string(const std::string &s) {  // LCOV_EXCL_START
+inline std::string escape_string(const std::string &s) {
     std::ostringstream o;
+    // LCOV_EXCL_START
     for (char c : s) {
         switch (c) {
             case '\x00':
@@ -559,9 +556,9 @@ inline std::string escape_string(const std::string &s) {  // LCOV_EXCL_START
                 o << c;
         }
     }
+    // LCOV_EXCL_STOP
 
     return o.str();
 }
-// LCOV_EXCL_STOP
 
 }  // namespace weserv::api::utils

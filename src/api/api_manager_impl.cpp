@@ -78,7 +78,8 @@ ApiManagerImpl::ApiManagerImpl(std::unique_ptr<ApiEnvInterface> env)
         vips_error_clear();
 
         env_->log_error("error: Unable to start up libvips: " + error);
-    }  // LCOV_EXCL_STOP
+        // LCOV_EXCL_STOP
+    }
 }
 
 ApiManagerImpl::~ApiManagerImpl() {
@@ -142,15 +143,15 @@ Status ApiManagerImpl::exception_handler(const std::string &query) {
 
         return {Status::Code::Unknown, error_str,
                 Status::ErrorCause::Application};
+        // LCOV_EXCL_STOP
     }
-    // LCOV_EXCL_STOP
 }
 
 utils::Status ApiManagerImpl::process(const std::string &query,
                                       const Source &source,
                                       const Target &target,
                                       const Config &config) {
-    auto query_holder = std::make_shared<parsers::Query>(query, config);
+    auto query_holder = std::make_shared<parsers::Query>(query);
 
     // Note: the disadvantage of pre-resize extraction behaviour is that none
     // of the very fast shrink-on-load tricks are possible. This can make
@@ -161,23 +162,23 @@ utils::Status ApiManagerImpl::process(const std::string &query,
     auto stream = processors::Stream(query_holder, config);
 
     // Image processors
-    auto trim = processors::Trim(query_holder);
+    auto trim = processors::Trim(query_holder, config);
     auto thumbnail = processors::Thumbnail(query_holder, config);
     auto orientation = processors::Orientation(query_holder, config);
     auto alignment = processors::Alignment(query_holder, config);
-    auto crop = processors::Crop(query_holder);
-    auto embed = processors::Embed(query_holder);
+    auto crop = processors::Crop(query_holder, config);
+    auto embed = processors::Embed(query_holder, config);
     auto rotation = processors::Rotation(query_holder, config);
-    auto brightness = processors::Brightness(query_holder);
-    auto modulate = processors::Modulate(query_holder);
-    auto contrast = processors::Contrast(query_holder);
-    auto gamma = processors::Gamma(query_holder);
-    auto sharpen = processors::Sharpen(query_holder);
-    auto filter = processors::Filter(query_holder);
-    auto blur = processors::Blur(query_holder);
-    auto tint = processors::Tint(query_holder);
-    auto background = processors::Background(query_holder);
-    auto mask = processors::Mask(query_holder);
+    auto brightness = processors::Brightness(query_holder, config);
+    auto modulate = processors::Modulate(query_holder, config);
+    auto contrast = processors::Contrast(query_holder, config);
+    auto gamma = processors::Gamma(query_holder, config);
+    auto sharpen = processors::Sharpen(query_holder, config);
+    auto filter = processors::Filter(query_holder, config);
+    auto blur = processors::Blur(query_holder, config);
+    auto tint = processors::Tint(query_holder, config);
+    auto background = processors::Background(query_holder, config);
+    auto mask = processors::Mask(query_holder, config);
 
     // Create image from a source
     auto image = stream.new_from_source(source);
